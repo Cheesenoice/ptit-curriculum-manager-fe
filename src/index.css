@@ -1,0 +1,54 @@
+@import "tailwindcss";
+@plugin "daisyui";
+@plugin "daisyui/theme" {
+  name: "autumn";
+  default: true;
+  --color-base-100: white;
+  --color-primary: #bc2626;
+}
+@layer components {
+  .underline-hover {
+    @apply relative cursor-pointer;
+  }
+
+  .underline-hover::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    bottom: 0;
+    width: 0;
+    height: 2px;
+    background-color: currentColor;
+    transition: all 0.3s ease;
+  }
+
+  .underline-hover:hover::after {
+    width: 100%;
+  }
+}
+@layer base {
+  html,
+  body {
+    -ms-overflow-style: none; /* IE và Edge */
+    scrollbar-width: thin; /* Firefox: mỏng */
+    scrollbar-color: #bc2626 transparent; /* Firefox: màu */
+  }
+
+  /* Chrome, Safari */
+  html::-webkit-scrollbar,
+  body::-webkit-scrollbar {
+    width: 4px; /* Mỏng như sợi dây */
+    height: 4px;
+  }
+
+  html::-webkit-scrollbar-track,
+  body::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  html::-webkit-scrollbar-thumb,
+  body::-webkit-scrollbar-thumb {
+    background-color: #bc2626;
+    border-radius: 10px;
+  }
+}
