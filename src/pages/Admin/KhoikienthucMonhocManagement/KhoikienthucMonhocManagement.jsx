@@ -18,12 +18,12 @@ const KhoikienthucMonhocManagement = () => {
   });
   const [khoaOptions, setKhoaOptions] = useState([]);
   const [nganhOptions, setNganhOptions] = useState([]);
-  const [chuyenNganhOptions, setChuyenNganhOptions] = useState([]); // Fetch khoa, nganh, chuyen nganh options (mocked or from API)
+  const [chuyenNganhOptions, setChuyenNganhOptions] = useState([]);
 
   useEffect(() => {
     const fetchFilterOptions = async () => {
       try {
-        const token = localStorage.getItem("access_token"); // Replace with actual API endpoints for khoa, nganh, chuyen nganh
+        const token = localStorage.getItem("access_token");
         const khoaRes = await axios.get("http://localhost:3000/api/khoa", {
           headers: { Authorization: `Bearer ${token}` },
         });
@@ -45,8 +45,9 @@ const KhoikienthucMonhocManagement = () => {
       }
     };
     fetchFilterOptions();
-  }, []); // Fetch all khoikienthucs
+  }, []);
 
+  // Fetch all khoikienthucs
   useEffect(() => {
     const fetchKhoikienthucs = async () => {
       try {
@@ -55,8 +56,9 @@ const KhoikienthucMonhocManagement = () => {
           headers: { Authorization: `Bearer ${token}` },
         });
         if (res.data.success) {
-          setKhoikienthucs(res.data.data);
-          setFilteredKhoikienthucs(res.data.data); // Initially show all
+          const flattenedData = flattenKhoiKienThuc(res.data.data);
+          setKhoikienthucs(flattenedData);
+          setFilteredKhoikienthucs(flattenedData);
         } else {
           console.error("Lỗi lấy dữ liệu:", res.data.message);
         }
@@ -67,13 +69,36 @@ const KhoikienthucMonhocManagement = () => {
       }
     };
     fetchKhoikienthucs();
-  }, []); // Handle filter change
+  }, []);
 
+  // Function to flatten the nested khoikienthuc data
+  const flattenKhoiKienThuc = (data, parentId = null) => {
+    let result = [];
+    data.forEach((item) => {
+      result.push({
+        MaKhoiKienThuc: item.maKhoiKienThuc,
+        TenKhoiKienThuc: item.tenKhoiKienThuc,
+        ParentID: item.parentId,
+        CapDo: item.level,
+        TongSoTinChi: item.tongSoTinChi,
+      });
+      if (item.khoiKienThucCon && item.khoiKienThucCon.length > 0) {
+        result = [
+          ...result,
+          ...flattenKhoiKienThuc(item.khoiKienThucCon, item.maKhoiKienThuc),
+        ];
+      }
+    });
+    return result;
+  };
+
+  // Handle filter change
   const handleFilterChange = (e) => {
     const { name, value } = e.target;
     setFilter((prev) => ({ ...prev, [name]: value }));
-  }; // Apply filter
+  };
 
+  // Apply filter
   const applyFilter = async () => {
     try {
       setLoading(true);
@@ -95,10 +120,9 @@ const KhoikienthucMonhocManagement = () => {
       if (res.data.success) {
         if (Array.isArray(res.data.data)) {
           const filteredMaKKTs = res.data.data.map(
-            (item) => item.MaKhoiKienThuc
+            (item) => item.maKhoiKienThuc
           );
 
-          // Nếu không có bộ lọc nào, hiển thị tất cả
           if (
             filteredMaKKTs.length === 0 &&
             !maKhoa &&
@@ -149,9 +173,10 @@ const KhoikienthucMonhocManagement = () => {
       setLoading(false);
     }
   };
+
   const resetFilter = () => {
     setFilter({ maKhoa: "", maNganh: "", maChuyenNganh: "" });
-    setFilteredKhoikienthucs(khoikienthucs); // Reset to all khoikienthucs
+    setFilteredKhoikienthucs(khoikienthucs);
   };
 
   const buildTree = (data, parentId = null) =>
@@ -187,7 +212,13 @@ const KhoikienthucMonhocManagement = () => {
         }
       );
       if (res.data.success) {
-        const danhSachMonHoc = res.data.data.danhSachMonHoc;
+        // Map the new response to include ThuTu
+        const danhSachMonHoc = res.data.data.map((mh, index) => ({
+          MaMonHoc: mh.MaMonHoc,
+          TenMonHoc: mh.TenMonHoc,
+          SoTinChi: mh.SoTinChi,
+          ThuTu: index + 1, // Assign default ThuTu based on index
+        }));
         setMonhocData((prev) => ({ ...prev, [maKKT]: danhSachMonHoc }));
         setOriginalMonhocData((prev) => ({
           ...prev,
@@ -271,6 +302,7 @@ const KhoikienthucMonhocManagement = () => {
                 <th>Thứ tự</th>
                 <th>Mã môn</th>
                 <th>Tên môn</th>
+                <th>Số tín chỉ</th>
                 <th>Tùy chỉnh</th>
               </tr>
             </thead>
@@ -296,6 +328,15 @@ const KhoikienthucMonhocManagement = () => {
                       transition={{ duration: 0.2 }}
                     >
                       {mh.TenMonHoc}
+                    </motion.td>
+                    <motion.td
+                      layout
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: 10 }}
+                      transition={{ duration: 0.2 }}
+                    >
+                      {mh.SoTinChi}
                     </motion.td>
                     <motion.td
                       layout
@@ -363,7 +404,7 @@ const KhoikienthucMonhocManagement = () => {
           <div className="collapse-title font-semibold text-base">
             {node.TenKhoiKienThuc}
             <span className="ml-2 text-sm opacity-80">
-              ({node.MaKhoiKienThuc})
+              ({node.MaKhoiKienThuc} - {node.TongSoTinChi} tín chỉ)
             </span>
           </div>
           <div className="collapse-content">
@@ -385,7 +426,6 @@ const KhoikienthucMonhocManagement = () => {
       <h1 className="text-3xl font-bold text-primary mb-6">
         Khối Kiến Thức & Môn Học
       </h1>
-      {/* Filter Form */}
       <div className="mb-6 bg-base-100 p-4 rounded-lg shadow">
         <h2 className="text-xl font-semibold mb-4">Lọc khối kiến thức</h2>
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -458,7 +498,6 @@ const KhoikienthucMonhocManagement = () => {
           </div>
         </div>
       </div>
-      {/* Knowledge Blocks Tree */}
       {loading ? (
         <div className="text-lg">Đang tải khối kiến thức...</div>
       ) : (

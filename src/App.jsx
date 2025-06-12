@@ -41,7 +41,7 @@ const AppContent = () => {
         <Route
           path="/admin"
           element={
-            <ProtectedRoute allowedRoles={["PHONGDAOTAO"]}>
+            <ProtectedRoute allowedRoles={["Phòng đào tạo"]}>
               <AdminLayout />
             </ProtectedRoute>
           }
