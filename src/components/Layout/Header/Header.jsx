@@ -73,7 +73,7 @@ const Header = () => {
         </a>
         {isLoggedIn ? (
           <div className="flex space-x-4">
-            <Link to="/profile" className="underline-hover">
+            <Link to="/user" className="underline-hover">
               Tài khoản của tôi
             </Link>
             <span

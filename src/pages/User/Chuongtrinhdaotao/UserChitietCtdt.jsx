@@ -17,7 +17,7 @@ axiosAuth.interceptors.request.use((config) => {
 });
 
 // Chi tiết chương trình đào tạo
-const ChitietCtdt = () => {
+const UserChitietCtdt = () => {
   const [chuongtrinh, setChuongtrinh] = useState(null);
   const [khoiKienThuc, setKhoiKienThuc] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -1474,4 +1474,4 @@ const ChitietCtdt = () => {
   );
 };
 
-export default ChitietCtdt;
+export default UserChitietCtdt;

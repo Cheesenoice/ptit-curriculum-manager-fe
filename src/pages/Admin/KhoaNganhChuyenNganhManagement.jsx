@@ -1,14 +1,16 @@
 import React, { useState, useEffect } from "react";
 
-const KhoaNganhChuyenNganhManagement = () => {
+const KhoaNganhKhoiKienThucManagement = () => {
   const [khoaList, setKhoaList] = useState([]);
   const [nganhList, setNganhList] = useState([]);
-  const [allNganhList, setAllNganhList] = useState([]); // Lưu trữ toàn bộ danh sách ngành
-  const [chuyenNganhList, setChuyenNganhList] = useState([]);
+  const [allNganhList, setAllNganhList] = useState([]);
+  const [khoiKienThucList, setKhoiKienThucList] = useState([]);
   const [selectedKhoaNganh, setSelectedKhoaNganh] = useState("");
-  const [selectedNganhChuyenNganh, setSelectedNganhChuyenNganh] = useState("");
+  const [selectedNganhKhoiKienThuc, setSelectedNganhKhoiKienThuc] =
+    useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [activeTab, setActiveTab] = useState("khoa");
 
   const getToken = () => {
     return localStorage.getItem("access_token");
@@ -53,14 +55,14 @@ const KhoaNganhChuyenNganhManagement = () => {
       const nganhData = await fetchWithToken("http://localhost:3000/api/nganh");
       if (nganhData?.success) {
         setNganhList(nganhData.data);
-        setAllNganhList(nganhData.data); // Lưu trữ toàn bộ danh sách ngành
+        setAllNganhList(nganhData.data);
       }
 
-      const chuyenNganhData = await fetchWithToken(
-        "http://localhost:3000/api/chuyennganh"
+      const khoiKienThucData = await fetchWithToken(
+        "http://localhost:3000/api/khoikienthucchuyenganh"
       );
-      if (chuyenNganhData?.success) {
-        setChuyenNganhList(chuyenNganhData.data);
+      if (khoiKienThucData?.success) {
+        setKhoiKienThucList(khoiKienThucData.data);
       }
 
       setLoading(false);
@@ -70,48 +72,45 @@ const KhoaNganhChuyenNganhManagement = () => {
   }, []);
 
   useEffect(() => {
-    // Lọc ngành dựa trên khoa đã chọn từ state allNganhList
     if (selectedKhoaNganh && allNganhList.length > 0) {
       const filteredNganh = allNganhList.filter(
         (nganh) => nganh.MaKhoa === selectedKhoaNganh
       );
       setNganhList(filteredNganh);
     } else {
-      // Nếu không có khoa nào được chọn, hiển thị tất cả ngành từ allNganhList
       setNganhList(allNganhList);
     }
-    setSelectedNganhChuyenNganh(""); // Reset chuyên ngành khi đổi khoa
+    setSelectedNganhKhoiKienThuc("");
   }, [selectedKhoaNganh, allNganhList]);
 
   useEffect(() => {
-    const fetchChuyenNganhTheoNganh = async () => {
-      if (selectedNganhChuyenNganh) {
+    const fetchKhoiKienThucTheoNganh = async () => {
+      if (selectedNganhKhoiKienThuc) {
         const data = await fetchWithToken(
-          `http://localhost:3000/api/chuyennganh?nganh=${selectedNganhChuyenNganh}`
+          `http://localhost:3000/api/khoikienthucchuyenganh?nganh=${selectedNganhKhoiKienThuc}`
         );
         if (data?.success) {
-          setChuyenNganhList(data.data);
+          setKhoiKienThucList(data.data);
         }
       } else {
-        // Nếu không có ngành nào được chọn, hiển thị tất cả chuyên ngành
         const data = await fetchWithToken(
-          "http://localhost:3000/api/chuyennganh"
+          "http://localhost:3000/api/khoikienthucchuyenganh"
         );
         if (data?.success) {
-          setChuyenNganhList(data.data);
+          setKhoiKienThucList(data.data);
         }
       }
     };
 
-    fetchChuyenNganhTheoNganh();
-  }, [selectedNganhChuyenNganh]);
+    fetchKhoiKienThucTheoNganh();
+  }, [selectedNganhKhoiKienThuc]);
 
   const handleKhoaChange = (event) => {
     setSelectedKhoaNganh(event.target.value);
   };
 
   const handleNganhChange = (event) => {
-    setSelectedNganhChuyenNganh(event.target.value);
+    setSelectedNganhKhoiKienThuc(event.target.value);
   };
 
   if (loading) {
@@ -125,159 +124,189 @@ const KhoaNganhChuyenNganhManagement = () => {
   return (
     <div className="p-6">
       <h1 className="text-3xl font-bold text-primary mb-4">
-        Quản lý Khoa / Ngành / Chuyên ngành
+        Quản lý Khoa / Ngành / Khối Kiến Thức Chuyên Ngành
       </h1>
 
-      {/* KHOA */}
-      <div className="card bg-base-100 shadow-md mb-8">
-        <div className="card-body">
-          <h2 className="card-title">1. Danh sách Khoa</h2>
-          <div className="overflow-x-auto">
-            <table className="table w-full">
-              <thead>
-                <tr>
-                  <th>Mã Khoa</th>
-                  <th>Tên Khoa</th>
-                  <th>Hành động</th>
-                </tr>
-              </thead>
-              <tbody>
+      <div className="tabs tabs-boxed mb-6">
+        <a
+          className={`tab ${activeTab === "khoa" ? "tab-active" : ""}`}
+          onClick={() => setActiveTab("khoa")}
+        >
+          Khoa
+        </a>
+        <a
+          className={`tab ${activeTab === "nganh" ? "tab-active" : ""}`}
+          onClick={() => setActiveTab("nganh")}
+        >
+          Ngành
+        </a>
+        <a
+          className={`tab ${activeTab === "khoikienthuc" ? "tab-active" : ""}`}
+          onClick={() => setActiveTab("khoikienthuc")}
+        >
+          Khối Kiến Thức Chuyên Ngành
+        </a>
+      </div>
+
+      {activeTab === "khoa" && (
+        <div className="card bg-base-100 shadow-xl">
+          <div className="card-body">
+            <h2 className="card-title">Danh sách Khoa</h2>
+            <div className="overflow-x-auto">
+              <table className="table w-full">
+                <thead>
+                  <tr>
+                    <th>Mã Khoa</th>
+                    <th>Tên Khoa</th>
+                    <th>Hành động</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {khoaList.map((khoa) => (
+                    <tr key={khoa.MaKhoa}>
+                      <td>{khoa.MaKhoa}</td>
+                      <td>{khoa.TenKhoa}</td>
+                      <td>
+                        <button className="btn btn-sm btn-primary btn-outline mr-2">
+                          Sửa
+                        </button>
+                        <button className="btn btn-sm btn-error">Xóa</button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <div className="card-actions justify-end mt-4">
+              <button className="btn btn-sm btn-success">Thêm Khoa</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {activeTab === "nganh" && (
+        <div className="card bg-base-100 shadow-xl">
+          <div className="card-body">
+            <h2 className="card-title">Danh sách Ngành</h2>
+            <div className="mb-4">
+              <label htmlFor="khoaSelect" className="label">
+                <span className="label-text">Chọn Khoa:</span>
+              </label>
+              <select
+                id="khoaSelect"
+                className="select select-bordered w-full"
+                value={selectedKhoaNganh}
+                onChange={handleKhoaChange}
+              >
+                <option value="">Tất cả các khoa</option>
                 {khoaList.map((khoa) => (
-                  <tr key={khoa.MaKhoa}>
-                    <td>{khoa.MaKhoa}</td>
-                    <td>{khoa.TenKhoa}</td>
-                    <td>
-                      <button className="btn btn-sm btn-primary btn-outline mr-2">
-                        Sửa
-                      </button>
-                      <button className="btn btn-sm btn-error">Xóa</button>
-                    </td>
-                  </tr>
+                  <option key={khoa.MaKhoa} value={khoa.MaKhoa}>
+                    {khoa.TenKhoa}
+                  </option>
                 ))}
-              </tbody>
-            </table>
-          </div>
-          <div className="card-actions justify-end mt-4">
-            <button className="btn btn-sm btn-success">Thêm Khoa</button>
+              </select>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="table w-full">
+                <thead>
+                  <tr>
+                    <th>Mã Ngành</th>
+                    <th>Tên Ngành</th>
+                    <th>Khoa</th>
+                    <th>Mô tả</th>
+                    <th>Số Chương trình</th>
+                    <th>Hành động</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {nganhList.map((nganh) => (
+                    <tr key={nganh.MaNganh}>
+                      <td>{nganh.MaNganh}</td>
+                      <td>{nganh.TenNganh}</td>
+                      <td>{nganh.TenKhoa}</td>
+                      <td>{nganh.MoTa || "Không có mô tả"}</td>
+                      <td>{nganh.SoChuongTrinh}</td>
+                      <td>
+                        <button className="btn btn-sm btn-primary btn-outline mr-2">
+                          Sửa
+                        </button>
+                        <button className="btn btn-sm btn-error">Xóa</button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <div className="card-actions justify-end mt-4">
+              <button className="btn btn-sm btn-success">Thêm Ngành</button>
+            </div>
           </div>
         </div>
-      </div>
+      )}
 
-      {/* NGÀNH */}
-      <div className="card bg-base-100 shadow-md mb-8">
-        <div className="card-body">
-          <h2 className="card-title">2. Danh sách Ngành</h2>
-          <div className="mb-4">
-            <label htmlFor="khoaSelect" className="label">
-              <span className="label-text">Chọn Khoa:</span>
-            </label>
-            <select
-              id="khoaSelect"
-              className="select select-bordered w-full"
-              value={selectedKhoaNganh}
-              onChange={handleKhoaChange}
-            >
-              <option value="">Tất cả các khoa</option>
-              {khoaList.map((khoa) => (
-                <option key={khoa.MaKhoa} value={khoa.MaKhoa}>
-                  {khoa.TenKhoa}
-                </option>
-              ))}
-            </select>
-          </div>
-          <div className="overflow-x-auto">
-            <table className="table w-full">
-              <thead>
-                <tr>
-                  <th>Mã Ngành</th>
-                  <th>Tên Ngành</th>
-                  <th>Mô tả</th>
-                  <th>Hành động</th>
-                </tr>
-              </thead>
-              <tbody>
+      {activeTab === "khoikienthuc" && (
+        <div className="card bg-base-100 shadow-xl">
+          <div className="card-body">
+            <h2 className="card-title">
+              Danh sách Khối Kiến Thức Chuyên Ngành
+            </h2>
+            <div className="mb-4">
+              <label htmlFor="nganhSelect" className="label">
+                <span className="label-text">Chọn Ngành:</span>
+              </label>
+              <select
+                id="nganhSelect"
+                className="select select-bordered w-full"
+                value={selectedNganhKhoiKienThuc}
+                onChange={handleNganhChange}
+              >
+                <option value="">Tất cả các ngành</option>
                 {nganhList.map((nganh) => (
-                  <tr key={nganh.MaNganh}>
-                    <td>{nganh.MaNganh}</td>
-                    <td>{nganh.TenNganh}</td>
-                    <td>{nganh.MoTa}</td>
-                    <td>
-                      <button className="btn btn-sm btn-primary btn-outline mr-2">
-                        Sửa
-                      </button>
-                      <button className="btn btn-sm btn-error">Xóa</button>
-                    </td>
-                  </tr>
+                  <option key={nganh.MaNganh} value={nganh.MaNganh}>
+                    {nganh.TenNganh}
+                  </option>
                 ))}
-              </tbody>
-            </table>
-          </div>
-          <div className="card-actions justify-end mt-4">
-            <button className="btn btn-sm btn-success">Thêm Ngành</button>
+              </select>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="table w-full">
+                <thead>
+                  <tr>
+                    <th>Mã Khối Kiến Thức</th>
+                    <th>Tên Khối Kiến Thức</th>
+                    <th>Parent ID</th>
+                    <th>Tổng Số Tín Chỉ</th>
+                    <th>Hành động</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {khoiKienThucList.map((kkt) => (
+                    <tr key={kkt.MaKhoiKienThuc}>
+                      <td>{kkt.MaKhoiKienThuc}</td>
+                      <td>{kkt.TenKhoiKienThuc}</td>
+                      <td>{kkt.ParentID}</td>
+                      <td>{kkt.TongSoTinChi}</td>
+                      <td>
+                        <button className="btn btn-sm btn-primary btn-outline mr-2">
+                          Sửa
+                        </button>
+                        <button className="btn btn-sm btn-error">Xóa</button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <div className="card-actions justify-end mt-4">
+              <button className="btn btn-sm btn-success">
+                Thêm Khối Kiến Thức
+              </button>
+            </div>
           </div>
         </div>
-      </div>
-
-      {/* CHUYÊN NGÀNH */}
-      <div className="card bg-base-100 shadow-md">
-        <div className="card-body">
-          <h2 className="card-title">3. Danh sách Chuyên ngành</h2>
-          <div className="mb-4">
-            <label htmlFor="nganhSelect" className="label">
-              <span className="label-text">Chọn Ngành:</span>
-            </label>
-            <select
-              id="nganhSelect"
-              className="select select-bordered w-full"
-              value={selectedNganhChuyenNganh}
-              onChange={handleNganhChange}
-            >
-              <option value="">Tất cả các ngành</option>
-              {nganhList.map((nganh) => (
-                <option key={nganh.MaNganh} value={nganh.MaNganh}>
-                  {nganh.TenNganh}
-                </option>
-              ))}
-            </select>
-          </div>
-          <div className="overflow-x-auto">
-            <table className="table w-full">
-              <thead>
-                <tr>
-                  <th>Mã Chuyên ngành</th>
-                  <th>Tên Chuyên ngành</th>
-                  <th>Thời gian đào tạo</th>
-                  <th>Hình thức</th>
-                  <th>Hành động</th>
-                </tr>
-              </thead>
-              <tbody>
-                {chuyenNganhList.map((cn) => (
-                  <tr key={cn.MaChuyenNganh}>
-                    <td>{cn.MaChuyenNganh}</td>
-                    <td>{cn.TenChuyenNganh}</td>
-                    <td>{cn.ThoiGianDaoTao} năm</td>
-                    <td>{cn.HinhThucDaoTao}</td>
-                    <td>
-                      <button className="btn btn-sm btn-primary btn-outline mr-2">
-                        Sửa
-                      </button>
-                      <button className="btn btn-sm btn-error">Xóa</button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-          <div className="card-actions justify-end mt-4">
-            <button className="btn btn-sm btn-success">
-              Thêm Chuyên ngành
-            </button>
-          </div>
-        </div>
-      </div>
+      )}
     </div>
   );
 };
 
-export default KhoaNganhChuyenNganhManagement;
+export default KhoaNganhKhoiKienThucManagement;

@@ -51,7 +51,7 @@ const ProgramList = ({ chuongtrinh, loading }) => {
                 className="btn btn-primary btn-sm"
                 onClick={() =>
                   navigate(
-                    `/admin/chuongtrinhdaotao/chitiet?maChuongTrinh=${ctdt.MaChuongTrinh}`
+                    `/user/chuongtrinhdaotao/chitiet?maChuongTrinh=${ctdt.MaChuongTrinh}`
                   )
                 }
               >
@@ -68,7 +68,7 @@ const ProgramList = ({ chuongtrinh, loading }) => {
 };
 
 // Main Management Component
-const ChuongtrinhdaotaoManagement = () => {
+const ChuongtrinhdaotaoView = () => {
   const [chuongtrinh, setChuongtrinh] = useState([]);
   const [loading, setLoading] = useState(false);
 
@@ -105,4 +105,4 @@ const ChuongtrinhdaotaoManagement = () => {
   );
 };
 
-export default ChuongtrinhdaotaoManagement;
+export default ChuongtrinhdaotaoView;
