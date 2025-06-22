@@ -1,63 +1,52 @@
-import React, { useState, useEffect } from "react";
-import { Eye, EyeOff } from "lucide-react";
+import React, { useEffect, useState } from "react";
 import {
-  getAllPhongDaoTao,
-  addPhongDaoTao,
-  deletePhongDaoTao,
-} from "../../../api/services/phongDaoTaoService";
-import { showToast } from "../../../components/Common/showToast";
+  getAllCtdt,
+  addCtdt,
+  deleteCtdt,
+} from "../../api/services/ctdtService";
+import { showToast } from "../../components/Common/showToast";
 
-const PhongDaoTao = () => {
-  const [trainingRooms, setTrainingRooms] = useState([]);
+const ChuongTrinh = () => {
+  const [ctdtList, setCtdtList] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [showPasswords, setShowPasswords] = useState({});
   const [modalOpen, setModalOpen] = useState(false);
   const [form, setForm] = useState({
-    tenDangNhap: "",
-    matKhau: "",
+    maChuongTrinh: "",
+    tenChuongTrinh: "",
+    maNganh: "",
+    trinhDoDaoTao: "",
+    hinhThucDaoTao: "",
+    namApDung: "",
   });
   const [deleteId, setDeleteId] = useState(null);
 
   useEffect(() => {
-    const fetchTrainingRooms = async () => {
+    const fetchData = async () => {
+      setLoading(true);
+      setError(null);
       try {
         const token = localStorage.getItem("access_token");
-        const response = await getAllPhongDaoTao(token);
-        if (response.data.success) {
-          setTrainingRooms(response.data.data);
-        } else {
-          setError(response.data.message);
-        }
+        const res = await getAllCtdt(token);
+        setCtdtList(res.data.data);
       } catch (err) {
-        setError("Không thể lấy danh sách phòng đào tạo");
+        setError("Không thể lấy danh sách chương trình đào tạo");
       } finally {
         setLoading(false);
       }
     };
-    fetchTrainingRooms();
+    fetchData();
   }, []);
 
-  const togglePasswordVisibility = (maPhong) => {
-    setShowPasswords((prev) => ({
-      ...prev,
-      [maPhong]: !prev[maPhong],
-    }));
-  };
-
-  // Fixed length for password display (8 characters)
-  const displayPassword = (password, show) => {
-    if (show) {
-      // Pad or truncate password to 8 characters for consistent width
-      return password.length > 8
-        ? password.slice(0, 8)
-        : password.padEnd(8, " ");
-    }
-    return "********"; // Always show 8 asterisks when masked
-  };
-
   const openAddModal = () => {
-    setForm({ tenDangNhap: "", matKhau: "" });
+    setForm({
+      maChuongTrinh: "",
+      tenChuongTrinh: "",
+      maNganh: "",
+      trinhDoDaoTao: "",
+      hinhThucDaoTao: "",
+      namApDung: "",
+    });
     setModalOpen(true);
   };
   const closeModal = () => setModalOpen(false);
@@ -67,16 +56,28 @@ const PhongDaoTao = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     const token = localStorage.getItem("access_token");
-    if (!form.tenDangNhap || !form.matKhau) {
-      showToast("Vui lòng nhập đủ thông tin", "error");
-      return;
+    // Validate
+    const required = [
+      "maChuongTrinh",
+      "tenChuongTrinh",
+      "maNganh",
+      "trinhDoDaoTao",
+      "hinhThucDaoTao",
+      "namApDung",
+    ];
+    for (let key of required) {
+      if (!form[key]) {
+        showToast("Vui lòng nhập đủ thông tin", "error");
+        return;
+      }
     }
     try {
       setLoading(true);
-      await addPhongDaoTao(form, token);
+      await addCtdt({ ...form, namApDung: Number(form.namApDung) }, token);
       showToast("Thêm thành công", "success");
-      const response = await getAllPhongDaoTao(token);
-      setTrainingRooms(response.data.data);
+      // Refresh
+      const res = await getAllCtdt(token);
+      setCtdtList(res.data.data);
       closeModal();
     } catch (err) {
       showToast("Có lỗi xảy ra", "error");
@@ -90,9 +91,9 @@ const PhongDaoTao = () => {
     const token = localStorage.getItem("access_token");
     try {
       setLoading(true);
-      await deletePhongDaoTao(deleteId, token);
+      await deleteCtdt(deleteId, token);
       showToast("Xóa thành công", "success");
-      setTrainingRooms((prev) => prev.filter((r) => r.ID !== deleteId));
+      setCtdtList((prev) => prev.filter((ct) => ct.MaChuongTrinh !== deleteId));
       setDeleteId(null);
     } catch (err) {
       showToast("Xóa thất bại", "error");
@@ -103,22 +104,19 @@ const PhongDaoTao = () => {
 
   return (
     <div className="p-6">
-      {/* Header */}
       <div className="mb-6 flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold text-primary mb-2">
-            Quản lý Phòng Đào tạo
+            Quản lý Chương trình đào tạo
           </h1>
           <p className="text-lg text-base-content">
-            Danh sách các phòng đào tạo hiện có
+            Danh sách các chương trình đào tạo
           </p>
         </div>
         <button className="btn btn-primary" onClick={openAddModal}>
-          Thêm tài khoản
+          Thêm chương trình
         </button>
       </div>
-
-      {/* Content */}
       {loading && (
         <div className="flex justify-center">
           <span className="loading loading-spinner loading-lg text-primary"></span>
@@ -136,33 +134,28 @@ const PhongDaoTao = () => {
               <table className="table w-full">
                 <thead>
                   <tr>
-                    <th>Mã Phòng</th>
-                    <th>Tên Đăng Nhập</th>
-                    <th>Mật Khẩu</th>
-                    <th>Mã Khoa</th>
+                    <th>Mã CTĐT</th>
+                    <th>Tên CTĐT</th>
+                    <th>Mã Ngành</th>
+                    <th>Trình độ</th>
+                    <th>Hình thức</th>
+                    <th>Năm áp dụng</th>
                     <th>Hành động</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {trainingRooms.map((room) => (
-                    <tr key={room.MaPhongDaoTao || room.ID}>
-                      <td>{room.MaPhongDaoTao || room.ID}</td>
-                      <td>{room.TenDangNhap}</td>
-                      <td className="flex items-center gap-2">
-                        <span className="font-mono">
-                          {displayPassword(
-                            room.MatKhau,
-                            showPasswords[room.MaPhongDaoTao || room.ID]
-                          )}
-                        </span>
-                      </td>
-                      <td>{room.MaKhoa || room.Quyen}</td>
+                  {ctdtList.map((ct) => (
+                    <tr key={ct.MaChuongTrinh}>
+                      <td>{ct.MaChuongTrinh}</td>
+                      <td>{ct.TenChuongTrinh}</td>
+                      <td>{ct.MaNganh}</td>
+                      <td>{ct.TrinhDoDaoTao}</td>
+                      <td>{ct.HinhThucDaoTao}</td>
+                      <td>{ct.NamApDung}</td>
                       <td>
                         <button
                           className="btn btn-xs btn-error"
-                          onClick={() =>
-                            confirmDelete(room.MaPhongDaoTao || room.ID)
-                          }
+                          onClick={() => confirmDelete(ct.MaChuongTrinh)}
                         >
                           Xóa
                         </button>
@@ -175,31 +168,64 @@ const PhongDaoTao = () => {
           </div>
         </div>
       )}
-
       {/* Modal Thêm */}
       {modalOpen && (
         <div className="fixed inset-0 flex items-center justify-center bg-black/30 z-50">
           <div className="bg-white rounded-lg p-6 w-full max-w-md shadow-lg">
             <h2 className="text-xl font-bold mb-4">
-              Thêm tài khoản Phòng đào tạo
+              Thêm chương trình đào tạo
             </h2>
             <form onSubmit={handleSubmit} className="space-y-3">
               <input
                 className="input input-bordered w-full"
-                name="tenDangNhap"
-                placeholder="Tên Đăng Nhập"
-                value={form.tenDangNhap}
+                name="maChuongTrinh"
+                placeholder="Mã chương trình"
+                value={form.maChuongTrinh}
                 onChange={handleChange}
                 required
               />
               <input
                 className="input input-bordered w-full"
-                name="matKhau"
-                placeholder="Mật Khẩu"
-                value={form.matKhau}
+                name="tenChuongTrinh"
+                placeholder="Tên chương trình"
+                value={form.tenChuongTrinh}
                 onChange={handleChange}
                 required
-                type="text"
+              />
+              <input
+                className="input input-bordered w-full"
+                name="maNganh"
+                placeholder="Mã ngành"
+                value={form.maNganh}
+                onChange={handleChange}
+                required
+              />
+              <input
+                className="input input-bordered w-full"
+                name="trinhDoDaoTao"
+                placeholder="Trình độ đào tạo"
+                value={form.trinhDoDaoTao}
+                onChange={handleChange}
+                required
+              />
+              <input
+                className="input input-bordered w-full"
+                name="hinhThucDaoTao"
+                placeholder="Hình thức đào tạo"
+                value={form.hinhThucDaoTao}
+                onChange={handleChange}
+                required
+              />
+              <input
+                className="input input-bordered w-full"
+                name="namApDung"
+                placeholder="Năm áp dụng"
+                value={form.namApDung}
+                onChange={handleChange}
+                required
+                type="number"
+                min="2000"
+                max="2100"
               />
               <div className="flex justify-end gap-2 mt-4">
                 <button
@@ -222,7 +248,7 @@ const PhongDaoTao = () => {
         <div className="fixed inset-0 flex items-center justify-center bg-black/30 z-50">
           <div className="bg-white rounded-lg p-6 w-full max-w-sm shadow-lg">
             <h2 className="text-lg font-bold mb-4">Xác nhận xóa</h2>
-            <p>Bạn có chắc muốn xóa tài khoản này?</p>
+            <p>Bạn có chắc muốn xóa chương trình này?</p>
             <div className="flex justify-end gap-2 mt-4">
               <button
                 className="btn btn-ghost"
@@ -241,4 +267,4 @@ const PhongDaoTao = () => {
   );
 };
 
-export default PhongDaoTao;
+export default ChuongTrinh;

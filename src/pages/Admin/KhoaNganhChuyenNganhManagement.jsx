@@ -1,74 +1,69 @@
 import React, { useState, useEffect } from "react";
+import {
+  getAllKhoa,
+  addKhoa,
+  updateKhoa,
+  deleteKhoa,
+} from "../../api/services/khoaService";
+import {
+  getAllNganh,
+  addNganh,
+  updateNganh,
+  deleteNganh,
+} from "../../api/services/nganhService";
+import { showToast } from "../../components/Common/showToast";
 
-const KhoaNganhKhoiKienThucManagement = () => {
+const KhoaNganhManagement = () => {
   const [khoaList, setKhoaList] = useState([]);
   const [nganhList, setNganhList] = useState([]);
   const [allNganhList, setAllNganhList] = useState([]);
-  const [khoiKienThucList, setKhoiKienThucList] = useState([]);
   const [selectedKhoaNganh, setSelectedKhoaNganh] = useState("");
-  const [selectedNganhKhoiKienThuc, setSelectedNganhKhoiKienThuc] =
-    useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [activeTab, setActiveTab] = useState("khoa");
 
-  const getToken = () => {
-    return localStorage.getItem("access_token");
-  };
+  // Modal state
+  const [modalOpen, setModalOpen] = useState(false);
+  const [editMode, setEditMode] = useState(false);
+  const [deleteId, setDeleteId] = useState(null);
+  const [modalType, setModalType] = useState(""); // "khoa" | "nganh"
+  const [form, setForm] = useState({});
+  const [currentEdit, setCurrentEdit] = useState(null);
 
-  const fetchWithToken = async (url, options = {}) => {
-    const token = getToken();
-    if (!token) {
-      setError("Không tìm thấy token xác thực.");
-      setLoading(false);
-      return null;
-    }
+  const getToken = () => localStorage.getItem("access_token");
 
-    const headers = {
-      ...options.headers,
-      Authorization: `Bearer ${token}`,
-    };
-
+  // Fetch data
+  const fetchKhoa = async () => {
+    setLoading(true);
+    setError(null);
     try {
-      const response = await fetch(url, { ...options, headers });
-      const data = await response.json();
-      if (!response.ok) {
-        throw new Error(data.message || "Lỗi từ server");
-      }
-      return data;
-    } catch (error) {
-      setError(`Lỗi khi gọi API: ${error.message}`);
-      return null;
+      const token = getToken();
+      const res = await getAllKhoa(token);
+      setKhoaList(res.data.data);
+    } catch (err) {
+      setError("Không thể lấy danh sách khoa");
+    } finally {
+      setLoading(false);
+    }
+  };
+  const fetchNganh = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const token = getToken();
+      const res = await getAllNganh(token);
+      setNganhList(res.data.data);
+      setAllNganhList(res.data.data);
+    } catch (err) {
+      setError("Không thể lấy danh sách ngành");
+    } finally {
+      setLoading(false);
     }
   };
 
   useEffect(() => {
-    const fetchInitialData = async () => {
-      setLoading(true);
-      setError(null);
-
-      const khoaData = await fetchWithToken("http://localhost:3000/api/khoa");
-      if (khoaData?.success) {
-        setKhoaList(khoaData.data);
-      }
-
-      const nganhData = await fetchWithToken("http://localhost:3000/api/nganh");
-      if (nganhData?.success) {
-        setNganhList(nganhData.data);
-        setAllNganhList(nganhData.data);
-      }
-
-      const khoiKienThucData = await fetchWithToken(
-        "http://localhost:3000/api/khoikienthucchuyenganh"
-      );
-      if (khoiKienThucData?.success) {
-        setKhoiKienThucList(khoiKienThucData.data);
-      }
-
-      setLoading(false);
-    };
-
-    fetchInitialData();
+    fetchKhoa();
+    fetchNganh();
   }, []);
 
   useEffect(() => {
@@ -80,43 +75,108 @@ const KhoaNganhKhoiKienThucManagement = () => {
     } else {
       setNganhList(allNganhList);
     }
-    setSelectedNganhKhoiKienThuc("");
   }, [selectedKhoaNganh, allNganhList]);
 
-  useEffect(() => {
-    const fetchKhoiKienThucTheoNganh = async () => {
-      if (selectedNganhKhoiKienThuc) {
-        const data = await fetchWithToken(
-          `http://localhost:3000/api/khoikienthucchuyenganh?nganh=${selectedNganhKhoiKienThuc}`
-        );
-        if (data?.success) {
-          setKhoiKienThucList(data.data);
-        }
-      } else {
-        const data = await fetchWithToken(
-          "http://localhost:3000/api/khoikienthucchuyenganh"
-        );
-        if (data?.success) {
-          setKhoiKienThucList(data.data);
-        }
-      }
-    };
-
-    fetchKhoiKienThucTheoNganh();
-  }, [selectedNganhKhoiKienThuc]);
-
-  const handleKhoaChange = (event) => {
-    setSelectedKhoaNganh(event.target.value);
+  // Modal handlers
+  const openAddModal = (type) => {
+    setEditMode(false);
+    setModalType(type);
+    setForm({});
+    setModalOpen(true);
   };
+  const openEditModal = (type, item) => {
+    setEditMode(true);
+    setModalType(type);
+    setCurrentEdit(item);
+    setForm(
+      type === "khoa"
+        ? { maKhoa: item.MaKhoa, tenKhoa: item.TenKhoa }
+        : {
+            maNganh: item.MaNganh,
+            maKhoa: item.MaKhoa,
+            tenNganh: item.TenNganh,
+            moTa: item.MoTa || "",
+          }
+    );
+    setModalOpen(true);
+  };
+  const closeModal = () => {
+    setModalOpen(false);
+    setCurrentEdit(null);
+  };
+  const handleChange = (e) =>
+    setForm({ ...form, [e.target.name]: e.target.value });
 
-  const handleNganhChange = (event) => {
-    setSelectedNganhKhoiKienThuc(event.target.value);
+  // CRUD handlers
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    const token = getToken();
+    try {
+      setLoading(true);
+      if (modalType === "khoa") {
+        if (editMode) {
+          await updateKhoa(form, token);
+          showToast("Cập nhật khoa thành công", "success");
+        } else {
+          if (!form.maKhoa || !form.tenKhoa) {
+            showToast("Vui lòng nhập đủ thông tin", "error");
+            setLoading(false);
+            return;
+          }
+          await addKhoa(form, token);
+          showToast("Thêm khoa thành công", "success");
+        }
+        await fetchKhoa();
+      } else if (modalType === "nganh") {
+        if (editMode) {
+          await updateNganh(form, token);
+          showToast("Cập nhật ngành thành công", "success");
+        } else {
+          if (!form.maNganh || !form.maKhoa || !form.tenNganh) {
+            showToast("Vui lòng nhập đủ thông tin", "error");
+            setLoading(false);
+            return;
+          }
+          await addNganh(form, token);
+          showToast("Thêm ngành thành công", "success");
+        }
+        await fetchNganh();
+      }
+      closeModal();
+    } catch (err) {
+      showToast("Có lỗi xảy ra", "error");
+    } finally {
+      setLoading(false);
+    }
+  };
+  const confirmDelete = (type, id) => {
+    setModalType(type);
+    setDeleteId(id);
+  };
+  const handleDelete = async () => {
+    const token = getToken();
+    try {
+      setLoading(true);
+      if (modalType === "khoa") {
+        await deleteKhoa(deleteId, token);
+        showToast("Xóa khoa thành công", "success");
+        await fetchKhoa();
+      } else if (modalType === "nganh") {
+        await deleteNganh(deleteId, token);
+        showToast("Xóa ngành thành công", "success");
+        await fetchNganh();
+      }
+      setDeleteId(null);
+    } catch (err) {
+      showToast("Xóa thất bại", "error");
+    } finally {
+      setLoading(false);
+    }
   };
 
   if (loading) {
     return <div className="p-6">Đang tải dữ liệu...</div>;
   }
-
   if (error) {
     return <div className="p-6 text-error">Lỗi: {error}</div>;
   }
@@ -124,9 +184,8 @@ const KhoaNganhKhoiKienThucManagement = () => {
   return (
     <div className="p-6">
       <h1 className="text-3xl font-bold text-primary mb-4">
-        Quản lý Khoa / Ngành / Khối Kiến Thức Chuyên Ngành
+        Quản lý Khoa / Ngành
       </h1>
-
       <div className="tabs tabs-boxed mb-6">
         <a
           className={`tab ${activeTab === "khoa" ? "tab-active" : ""}`}
@@ -140,14 +199,7 @@ const KhoaNganhKhoiKienThucManagement = () => {
         >
           Ngành
         </a>
-        <a
-          className={`tab ${activeTab === "khoikienthuc" ? "tab-active" : ""}`}
-          onClick={() => setActiveTab("khoikienthuc")}
-        >
-          Khối Kiến Thức Chuyên Ngành
-        </a>
       </div>
-
       {activeTab === "khoa" && (
         <div className="card bg-base-100 shadow-xl">
           <div className="card-body">
@@ -167,10 +219,18 @@ const KhoaNganhKhoiKienThucManagement = () => {
                       <td>{khoa.MaKhoa}</td>
                       <td>{khoa.TenKhoa}</td>
                       <td>
-                        <button className="btn btn-sm btn-primary btn-outline mr-2">
+                        <button
+                          className="btn btn-sm btn-primary btn-outline mr-2"
+                          onClick={() => openEditModal("khoa", khoa)}
+                        >
                           Sửa
                         </button>
-                        <button className="btn btn-sm btn-error">Xóa</button>
+                        <button
+                          className="btn btn-sm btn-error"
+                          onClick={() => confirmDelete("khoa", khoa.MaKhoa)}
+                        >
+                          Xóa
+                        </button>
                       </td>
                     </tr>
                   ))}
@@ -178,12 +238,16 @@ const KhoaNganhKhoiKienThucManagement = () => {
               </table>
             </div>
             <div className="card-actions justify-end mt-4">
-              <button className="btn btn-sm btn-success">Thêm Khoa</button>
+              <button
+                className="btn btn-sm btn-success"
+                onClick={() => openAddModal("khoa")}
+              >
+                Thêm Khoa
+              </button>
             </div>
           </div>
         </div>
       )}
-
       {activeTab === "nganh" && (
         <div className="card bg-base-100 shadow-xl">
           <div className="card-body">
@@ -196,7 +260,7 @@ const KhoaNganhKhoiKienThucManagement = () => {
                 id="khoaSelect"
                 className="select select-bordered w-full"
                 value={selectedKhoaNganh}
-                onChange={handleKhoaChange}
+                onChange={(e) => setSelectedKhoaNganh(e.target.value)}
               >
                 <option value="">Tất cả các khoa</option>
                 {khoaList.map((khoa) => (
@@ -214,7 +278,6 @@ const KhoaNganhKhoiKienThucManagement = () => {
                     <th>Tên Ngành</th>
                     <th>Khoa</th>
                     <th>Mô tả</th>
-                    <th>Số Chương trình</th>
                     <th>Hành động</th>
                   </tr>
                 </thead>
@@ -225,12 +288,19 @@ const KhoaNganhKhoiKienThucManagement = () => {
                       <td>{nganh.TenNganh}</td>
                       <td>{nganh.TenKhoa}</td>
                       <td>{nganh.MoTa || "Không có mô tả"}</td>
-                      <td>{nganh.SoChuongTrinh}</td>
                       <td>
-                        <button className="btn btn-sm btn-primary btn-outline mr-2">
+                        <button
+                          className="btn btn-sm btn-primary btn-outline mr-2"
+                          onClick={() => openEditModal("nganh", nganh)}
+                        >
                           Sửa
                         </button>
-                        <button className="btn btn-sm btn-error">Xóa</button>
+                        <button
+                          className="btn btn-sm btn-error"
+                          onClick={() => confirmDelete("nganh", nganh.MaNganh)}
+                        >
+                          Xóa
+                        </button>
                       </td>
                     </tr>
                   ))}
@@ -238,68 +308,126 @@ const KhoaNganhKhoiKienThucManagement = () => {
               </table>
             </div>
             <div className="card-actions justify-end mt-4">
-              <button className="btn btn-sm btn-success">Thêm Ngành</button>
+              <button
+                className="btn btn-sm btn-success"
+                onClick={() => openAddModal("nganh")}
+              >
+                Thêm Ngành
+              </button>
             </div>
           </div>
         </div>
       )}
-
-      {activeTab === "khoikienthuc" && (
-        <div className="card bg-base-100 shadow-xl">
-          <div className="card-body">
-            <h2 className="card-title">
-              Danh sách Khối Kiến Thức Chuyên Ngành
+      {/* Modal Thêm/Sửa */}
+      {modalOpen && (
+        <div className="fixed inset-0 flex items-center justify-center bg-black/30 z-50">
+          <div className="bg-white rounded-lg p-6 w-full max-w-md shadow-lg">
+            <h2 className="text-xl font-bold mb-4">
+              {editMode
+                ? modalType === "khoa"
+                  ? "Sửa Khoa"
+                  : "Sửa Ngành"
+                : modalType === "khoa"
+                ? "Thêm Khoa"
+                : "Thêm Ngành"}
             </h2>
-            <div className="mb-4">
-              <label htmlFor="nganhSelect" className="label">
-                <span className="label-text">Chọn Ngành:</span>
-              </label>
-              <select
-                id="nganhSelect"
-                className="select select-bordered w-full"
-                value={selectedNganhKhoiKienThuc}
-                onChange={handleNganhChange}
+            <form onSubmit={handleSubmit} className="space-y-3">
+              {modalType === "khoa" ? (
+                <>
+                  <input
+                    className="input input-bordered w-full"
+                    name="maKhoa"
+                    placeholder="Mã Khoa"
+                    value={form.maKhoa || ""}
+                    onChange={handleChange}
+                    required
+                    disabled={editMode}
+                  />
+                  <input
+                    className="input input-bordered w-full"
+                    name="tenKhoa"
+                    placeholder="Tên Khoa"
+                    value={form.tenKhoa || ""}
+                    onChange={handleChange}
+                    required
+                  />
+                </>
+              ) : (
+                <>
+                  <input
+                    className="input input-bordered w-full"
+                    name="maNganh"
+                    placeholder="Mã Ngành"
+                    value={form.maNganh || ""}
+                    onChange={handleChange}
+                    required
+                    disabled={editMode}
+                  />
+                  <select
+                    className="select select-bordered w-full"
+                    name="maKhoa"
+                    value={form.maKhoa || ""}
+                    onChange={handleChange}
+                    required
+                  >
+                    <option value="">Chọn Khoa</option>
+                    {khoaList.map((khoa) => (
+                      <option key={khoa.MaKhoa} value={khoa.MaKhoa}>
+                        {khoa.TenKhoa}
+                      </option>
+                    ))}
+                  </select>
+                  <input
+                    className="input input-bordered w-full"
+                    name="tenNganh"
+                    placeholder="Tên Ngành"
+                    value={form.tenNganh || ""}
+                    onChange={handleChange}
+                    required
+                  />
+                  <input
+                    className="input input-bordered w-full"
+                    name="moTa"
+                    placeholder="Mô tả"
+                    value={form.moTa || ""}
+                    onChange={handleChange}
+                  />
+                </>
+              )}
+              <div className="flex justify-end gap-2 mt-4">
+                <button
+                  type="button"
+                  className="btn btn-ghost"
+                  onClick={closeModal}
+                >
+                  Hủy
+                </button>
+                <button className="btn btn-primary" type="submit">
+                  {editMode ? "Lưu" : "Thêm"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+      {/* Modal xác nhận xóa */}
+      {deleteId && (
+        <div className="fixed inset-0 flex items-center justify-center bg-black/30 z-50">
+          <div className="bg-white rounded-lg p-6 w-full max-w-sm shadow-lg">
+            <h2 className="text-lg font-bold mb-4">Xác nhận xóa</h2>
+            <p>
+              Bạn có chắc muốn xóa {modalType === "khoa" ? "khoa" : "ngành"}{" "}
+              này?
+            </p>
+            <div className="flex justify-end gap-2 mt-4">
+              <button
+                className="btn btn-ghost"
+                onClick={() => setDeleteId(null)}
               >
-                <option value="">Tất cả các ngành</option>
-                {nganhList.map((nganh) => (
-                  <option key={nganh.MaNganh} value={nganh.MaNganh}>
-                    {nganh.TenNganh}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div className="overflow-x-auto">
-              <table className="table w-full">
-                <thead>
-                  <tr>
-                    <th>Mã Khối Kiến Thức</th>
-                    <th>Tên Khối Kiến Thức</th>
-                    <th>Parent ID</th>
-                    <th>Tổng Số Tín Chỉ</th>
-                    <th>Hành động</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {khoiKienThucList.map((kkt) => (
-                    <tr key={kkt.MaKhoiKienThuc}>
-                      <td>{kkt.MaKhoiKienThuc}</td>
-                      <td>{kkt.TenKhoiKienThuc}</td>
-                      <td>{kkt.ParentID}</td>
-                      <td>{kkt.TongSoTinChi}</td>
-                      <td>
-                        <button className="btn btn-sm btn-primary btn-outline mr-2">
-                          Sửa
-                        </button>
-                        <button className="btn btn-sm btn-error">Xóa</button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-            <div className="card-actions justify-end mt-4">
-              <button className="btn btn-sm btn-success">
-                Thêm Khối Kiến Thức
+                Hủy
+              </button>
+              <button className="btn btn-error" onClick={handleDelete}>
+                Xóa
               </button>
             </div>
           </div>
@@ -309,4 +437,4 @@ const KhoaNganhKhoiKienThucManagement = () => {
   );
 };
 
-export default KhoaNganhKhoiKienThucManagement;
+export default KhoaNganhManagement;

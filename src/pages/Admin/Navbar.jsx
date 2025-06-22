@@ -28,21 +28,20 @@ const Navbar = () => {
     },
     {
       icon: SquareChartGantt,
+      label: "Chương trình",
+      path: "/admin/ctdt",
+    },
+    {
+      icon: SquareChartGantt,
       label: "Chương trình đào tạo",
       path: "/admin/chuongtrinhdaotao",
     },
     { icon: Users, label: "Người dùng", path: "/admin/users" },
     {
       icon: FolderTree,
-      label: "Khoa - Ngành - Chuyên Ngành",
+      label: "Khoa - Ngành",
       path: "/admin/khoa-nganh-chuyennganh",
     },
-    {
-      icon: FolderTree,
-      label: "Niên khóa - Kỳ học",
-      path: "/admin/nienkhoa-kyhoc",
-    },
-    { icon: Settings, label: "Settings", path: "/admin/settings" },
   ];
 
   const handleLogout = () => {

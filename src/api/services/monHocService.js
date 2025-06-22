@@ -64,3 +64,27 @@ export const deleteMonHoc = async (maMonHoc) => {
     };
   }
 };
+
+export const getAllMonHoc = async (token) => {
+  return apiClient.get("/monhoc", {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+};
+
+export const getMonHocByGiangVien = async (maGiangVien, token) => {
+  return apiClient.get(`/monhoc/giangvien/${maGiangVien}`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+};
+
+export const updateMonHocGiangVien = async (
+  maGiangVien,
+  danhSachMaMonHoc,
+  token
+) => {
+  return apiClient.post(
+    "/monhoc/giangvien/capnhat",
+    { maGiangVien, danhSachMaMonHoc },
+    { headers: { Authorization: `Bearer ${token}` } }
+  );
+};

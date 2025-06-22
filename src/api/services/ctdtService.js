@@ -162,3 +162,21 @@ export const deleteMonTuChon = async (maChuongTrinh, maKhoiKienThuc, hocKy) => {
     throw err;
   }
 };
+
+export const getAllCtdt = async (token) => {
+  return apiClient.get("/ctdt", {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+};
+
+export const addCtdt = async (data, token) => {
+  return apiClient.post("/ctdt/them", data, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+};
+
+export const deleteCtdt = async (maChuongTrinh, token) => {
+  return apiClient.delete(`/ctdt/xoa/${maChuongTrinh}`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+};

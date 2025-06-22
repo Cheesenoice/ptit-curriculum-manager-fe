@@ -20,6 +20,7 @@ import GiangVien from "./pages/Admin/UserManagement/GiangVien";
 import SinhVien from "./pages/Admin/UserManagement/SinhVien";
 import MonhocManagement from "./pages/Admin/MonhocManagement";
 import KhoikienthucMonhocManagement from "./pages/Admin/KhoikienthucMonhocManagement/KhoikienthucMonhocManagement";
+import ChuongTrinh from "./pages/Admin/ChuongTrinh";
 import ChuongtrinhdaotaoManagement from "./pages/Admin/ChuongtrinhdaotaoManagemant/ChuongtrinhdaotaoManagemant";
 import NienkhoaKyhocManagement from "./pages/Admin/NienkhoaKyhocManagement";
 import KhoaNganhChuyenNganhManagement from "./pages/Admin/KhoaNganhChuyenNganhManagement";
@@ -69,6 +70,7 @@ const AppContent = () => {
             element={<KhoikienthucMonhocManagement />}
           />
           {/* Quản lý chương trình đào tạo */}
+          <Route path="ctdt" element={<ChuongTrinh />} />
           <Route
             path="chuongtrinhdaotao"
             element={<ChuongtrinhdaotaoManagement />}
