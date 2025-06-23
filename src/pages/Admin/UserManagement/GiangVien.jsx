@@ -13,6 +13,7 @@ import {
   updateMonHocGiangVien,
 } from "../../../api/services/monHocService";
 import GiangVienView from "./GiangVienView";
+import { getAllKhoa } from "../../../api/services/khoaService";
 
 const GiangVien = () => {
   const [lecturers, setLecturers] = useState([]);
@@ -36,6 +37,7 @@ const GiangVien = () => {
   const [monList, setMonList] = useState([]);
   const [selectedMon, setSelectedMon] = useState([]);
   const [monModalLecturer, setMonModalLecturer] = useState(null);
+  const [khoaList, setKhoaList] = useState([]);
 
   useEffect(() => {
     const fetchLecturers = async () => {
@@ -74,7 +76,7 @@ const GiangVien = () => {
     return "********"; // Always show 8 asterisks when masked
   };
 
-  const openAddModal = () => {
+  const openAddModal = async () => {
     setEditMode(false);
     setForm({
       maGiangVien: "",
@@ -86,9 +88,15 @@ const GiangVien = () => {
       matKhau: "",
     });
     setModalOpen(true);
+    // Lấy danh sách khoa
+    try {
+      const token = localStorage.getItem("access_token");
+      const res = await getAllKhoa(token);
+      setKhoaList(res.data.data || []);
+    } catch {}
   };
 
-  const openEditModal = (lecturer) => {
+  const openEditModal = async (lecturer) => {
     setEditMode(true);
     setCurrentLecturer(lecturer);
     setForm({
@@ -101,6 +109,12 @@ const GiangVien = () => {
       matKhau: lecturer.MatKhau || "",
     });
     setModalOpen(true);
+    // Lấy danh sách khoa
+    try {
+      const token = localStorage.getItem("access_token");
+      const res = await getAllKhoa(token);
+      setKhoaList(res.data.data || []);
+    } catch {}
   };
 
   const closeModal = () => {
@@ -340,14 +354,20 @@ const GiangVien = () => {
                 onChange={handleChange}
                 required={!editMode}
               />
-              <input
-                className="input input-bordered w-full"
+              <select
+                className="select select-bordered w-full"
                 name="maKhoa"
-                placeholder="Mã Khoa"
                 value={form.maKhoa}
                 onChange={handleChange}
                 required={!editMode}
-              />
+              >
+                <option value="">Chọn khoa</option>
+                {khoaList.map((khoa) => (
+                  <option key={khoa.MaKhoa} value={khoa.MaKhoa}>
+                    {khoa.TenKhoa}
+                  </option>
+                ))}
+              </select>
               <input
                 className="input input-bordered w-full"
                 name="email"

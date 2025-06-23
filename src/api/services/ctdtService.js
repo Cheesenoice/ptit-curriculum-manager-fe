@@ -180,3 +180,9 @@ export const deleteCtdt = async (maChuongTrinh, token) => {
     headers: { Authorization: `Bearer ${token}` },
   });
 };
+
+export const updateCtdt = async (data, token) => {
+  return apiClient.put("/ctdt/capnhat", data, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+};

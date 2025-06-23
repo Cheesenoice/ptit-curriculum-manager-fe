@@ -3,8 +3,10 @@ import {
   getAllCtdt,
   addCtdt,
   deleteCtdt,
+  updateCtdt,
 } from "../../api/services/ctdtService";
 import { showToast } from "../../components/Common/showToast";
+import { getAllNganh } from "../../api/services/nganhService";
 
 const ChuongTrinh = () => {
   const [ctdtList, setCtdtList] = useState([]);
@@ -20,6 +22,12 @@ const ChuongTrinh = () => {
     namApDung: "",
   });
   const [deleteId, setDeleteId] = useState(null);
+  const [editMode, setEditMode] = useState(false);
+  const [currentEdit, setCurrentEdit] = useState(null);
+  const [nganhList, setNganhList] = useState([]);
+  const [nganhMap, setNganhMap] = useState({});
+
+  const years = Array.from({ length: 2050 - 2010 + 1 }, (_, i) => 2010 + i);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -27,8 +35,18 @@ const ChuongTrinh = () => {
       setError(null);
       try {
         const token = localStorage.getItem("access_token");
-        const res = await getAllCtdt(token);
-        setCtdtList(res.data.data);
+        const [ctdtRes, nganhRes] = await Promise.all([
+          getAllCtdt(token),
+          getAllNganh(token),
+        ]);
+        setCtdtList(ctdtRes.data.data);
+        setNganhList(nganhRes.data.data || []);
+        // Tạo map mã ngành -> tên ngành
+        const map = {};
+        (nganhRes.data.data || []).forEach((n) => {
+          map[n.MaNganh] = n.TenNganh;
+        });
+        setNganhMap(map);
       } catch (err) {
         setError("Không thể lấy danh sách chương trình đào tạo");
       } finally {
@@ -38,7 +56,7 @@ const ChuongTrinh = () => {
     fetchData();
   }, []);
 
-  const openAddModal = () => {
+  const openAddModal = async () => {
     setForm({
       maChuongTrinh: "",
       tenChuongTrinh: "",
@@ -47,7 +65,34 @@ const ChuongTrinh = () => {
       hinhThucDaoTao: "",
       namApDung: "",
     });
+    setEditMode(false);
+    setCurrentEdit(null);
     setModalOpen(true);
+    // Lấy danh sách ngành
+    try {
+      const token = localStorage.getItem("access_token");
+      const res = await getAllNganh(token);
+      setNganhList(res.data.data || []);
+    } catch {}
+  };
+  const openEditModal = async (ct) => {
+    setForm({
+      maChuongTrinh: ct.MaChuongTrinh,
+      tenChuongTrinh: ct.TenChuongTrinh,
+      maNganh: ct.MaNganh,
+      trinhDoDaoTao: ct.TrinhDoDaoTao,
+      hinhThucDaoTao: ct.HinhThucDaoTao,
+      namApDung: ct.NamApDung,
+    });
+    setEditMode(true);
+    setCurrentEdit(ct);
+    setModalOpen(true);
+    // Lấy danh sách ngành
+    try {
+      const token = localStorage.getItem("access_token");
+      const res = await getAllNganh(token);
+      setNganhList(res.data.data || []);
+    } catch {}
   };
   const closeModal = () => setModalOpen(false);
   const handleChange = (e) =>
@@ -73,8 +118,13 @@ const ChuongTrinh = () => {
     }
     try {
       setLoading(true);
-      await addCtdt({ ...form, namApDung: Number(form.namApDung) }, token);
-      showToast("Thêm thành công", "success");
+      if (editMode) {
+        await updateCtdt({ ...form, namApDung: Number(form.namApDung) }, token);
+        showToast("Cập nhật thành công", "success");
+      } else {
+        await addCtdt({ ...form, namApDung: Number(form.namApDung) }, token);
+        showToast("Thêm thành công", "success");
+      }
       // Refresh
       const res = await getAllCtdt(token);
       setCtdtList(res.data.data);
@@ -137,6 +187,7 @@ const ChuongTrinh = () => {
                     <th>Mã CTĐT</th>
                     <th>Tên CTĐT</th>
                     <th>Mã Ngành</th>
+                    <th>Tên Ngành</th>
                     <th>Trình độ</th>
                     <th>Hình thức</th>
                     <th>Năm áp dụng</th>
@@ -149,10 +200,17 @@ const ChuongTrinh = () => {
                       <td>{ct.MaChuongTrinh}</td>
                       <td>{ct.TenChuongTrinh}</td>
                       <td>{ct.MaNganh}</td>
+                      <td>{nganhMap[ct.MaNganh] || ""}</td>
                       <td>{ct.TrinhDoDaoTao}</td>
                       <td>{ct.HinhThucDaoTao}</td>
                       <td>{ct.NamApDung}</td>
                       <td>
+                        <button
+                          className="btn btn-xs btn-info mr-2"
+                          onClick={() => openEditModal(ct)}
+                        >
+                          Sửa
+                        </button>
                         <button
                           className="btn btn-xs btn-error"
                           onClick={() => confirmDelete(ct.MaChuongTrinh)}
@@ -168,12 +226,14 @@ const ChuongTrinh = () => {
           </div>
         </div>
       )}
-      {/* Modal Thêm */}
+      {/* Modal Thêm/Sửa */}
       {modalOpen && (
         <div className="fixed inset-0 flex items-center justify-center bg-black/30 z-50">
           <div className="bg-white rounded-lg p-6 w-full max-w-md shadow-lg">
             <h2 className="text-xl font-bold mb-4">
-              Thêm chương trình đào tạo
+              {editMode
+                ? "Sửa chương trình đào tạo"
+                : "Thêm chương trình đào tạo"}
             </h2>
             <form onSubmit={handleSubmit} className="space-y-3">
               <input
@@ -183,6 +243,7 @@ const ChuongTrinh = () => {
                 value={form.maChuongTrinh}
                 onChange={handleChange}
                 required
+                disabled={editMode}
               />
               <input
                 className="input input-bordered w-full"
@@ -192,14 +253,20 @@ const ChuongTrinh = () => {
                 onChange={handleChange}
                 required
               />
-              <input
-                className="input input-bordered w-full"
+              <select
+                className="select select-bordered w-full"
                 name="maNganh"
-                placeholder="Mã ngành"
                 value={form.maNganh}
                 onChange={handleChange}
                 required
-              />
+              >
+                <option value="">Chọn ngành</option>
+                {nganhList.map((nganh) => (
+                  <option key={nganh.MaNganh} value={nganh.MaNganh}>
+                    {nganh.TenNganh}
+                  </option>
+                ))}
+              </select>
               <input
                 className="input input-bordered w-full"
                 name="trinhDoDaoTao"
@@ -216,17 +283,20 @@ const ChuongTrinh = () => {
                 onChange={handleChange}
                 required
               />
-              <input
-                className="input input-bordered w-full"
+              <select
+                className="select select-bordered w-full"
                 name="namApDung"
-                placeholder="Năm áp dụng"
                 value={form.namApDung}
                 onChange={handleChange}
                 required
-                type="number"
-                min="2000"
-                max="2100"
-              />
+              >
+                <option value="">Chọn năm áp dụng</option>
+                {years.map((year) => (
+                  <option key={year} value={year}>
+                    {year}
+                  </option>
+                ))}
+              </select>
               <div className="flex justify-end gap-2 mt-4">
                 <button
                   type="button"
@@ -236,7 +306,7 @@ const ChuongTrinh = () => {
                   Hủy
                 </button>
                 <button className="btn btn-primary" type="submit">
-                  Thêm
+                  {editMode ? "Lưu" : "Thêm"}
                 </button>
               </div>
             </form>

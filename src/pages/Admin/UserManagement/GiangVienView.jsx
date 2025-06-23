@@ -79,20 +79,24 @@ const GiangVienView = ({ lecturer, open, onClose, onSaved }) => {
             <div>Không có môn học nào.</div>
           ) : (
             <ul className="space-y-2">
-              {monList.map((mon) => (
-                <li key={mon.MaMonHoc} className="flex items-center gap-2">
-                  <input
-                    type="checkbox"
-                    className="checkbox checkbox-primary"
-                    checked={selectedMon.includes(mon.MaMonHoc)}
-                    onChange={() => handleMonCheck(mon.MaMonHoc)}
-                    id={`monhoc-${mon.MaMonHoc}`}
-                  />
-                  <label htmlFor={`monhoc-${mon.MaMonHoc}`}>
-                    {mon.TenMonHoc}
-                  </label>
-                </li>
-              ))}
+              {monList
+                .filter(
+                  (mon) => !mon.TenMonHoc.toLowerCase().includes("tự chọn")
+                )
+                .map((mon) => (
+                  <li key={mon.MaMonHoc} className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      className="checkbox checkbox-primary"
+                      checked={selectedMon.includes(mon.MaMonHoc)}
+                      onChange={() => handleMonCheck(mon.MaMonHoc)}
+                      id={`monhoc-${mon.MaMonHoc}`}
+                    />
+                    <label htmlFor={`monhoc-${mon.MaMonHoc}`}>
+                      {mon.TenMonHoc}
+                    </label>
+                  </li>
+                ))}
             </ul>
           )}
         </div>
